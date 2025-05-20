@@ -1,0 +1,31 @@
+import streamlit as st
+import torch
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+import emoji
+
+# Load model and tokenizer
+tokenizer = DistilBertTokenizer.from_pretrained("path_to_tokenizer_or_model_name")
+model = DistilBertForSequenceClassification.from_pretrained("path_to_model_directory")
+model.eval()
+
+# Emotion labels (adjust based on your training)
+labels = ['joy', 'sadness', 'anger', 'fear', 'love', 'surprise']
+
+def predict_emotion(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    with torch.no_grad():
+        outputs = model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=1)
+    predicted_class = torch.argmax(probs).item()
+    return labels[predicted_class], probs[0][predicted_class].item()
+
+# UI
+st.title("Social Media Emotion Detector 😊😢😡")
+user_input = st.text_area("Enter any social media message:")
+
+if st.button("Detect Emotion"):
+    if user_input.strip():
+        label, confidence = predict_emotion(user_input)
+        st.success(f"**Predicted Emotion:** {label} ({confidence*100:.2f}%)")
+    else:
+        st.warning("Please enter some text.")
